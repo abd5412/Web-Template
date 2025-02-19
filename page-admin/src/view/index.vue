@@ -140,9 +140,8 @@ const handleMenuSelect = (even) => {
 
 onMounted(() => {
     getUserInfo().then(res => {
-        localStorage.setItem('userInfo', res.data.user)
+        localStorage.setItem('userInfo', res.data)
         username.value = res.data.username
-        console.log(username)
     })
 })
 

@@ -13,16 +13,16 @@ const routes = [
         name: "login",
         component: () => import("../view/user/login.vue")
     },
-    {
-        path: '/test',
-        name: 'test',
-        component: () => import("../view/page/test.vue")
-    },
-    {
-        path: '/userManagement',
-        name: 'userManagement',
-        component: () => import("../view/user/userManagement.vue")
-    },
+    // {
+    //     path: '/test',
+    //     name: 'test',
+    //     component: () => import("../view/page/test.vue")
+    // },
+    // {
+    //     path: '/userManagement',
+    //     name: 'userManagement',
+    //     component: () => import("../view/user/userManagement.vue")
+    // },
     {
         path: '/404',
         name: 'NotFound',

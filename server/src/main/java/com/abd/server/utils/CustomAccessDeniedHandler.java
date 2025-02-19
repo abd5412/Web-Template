@@ -1,5 +1,8 @@
 package com.abd.server.utils;
 
+import com.abd.server.pojo.R;
+import com.abd.server.pojo.sysEnum.HttpStatus;
+import com.alibaba.fastjson.JSON;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
@@ -20,6 +23,6 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
         response.setStatus(200);
         response.setContentType("application/json");
         response.setCharacterEncoding("utf-8");
-        response.getWriter().write(msg);
+        response.getWriter().write(JSON.toJSONString(R.failed(HttpStatus.FORBIDDEN)));
     }
 }

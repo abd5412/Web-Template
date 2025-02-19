@@ -22,7 +22,7 @@ milliaAxios.interceptors.request.use(config => {
     // 判断是否存在token
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
-    }else{
+    } else {
         router.push('/login')
     }
     return config
@@ -36,14 +36,20 @@ milliaAxios.interceptors.response.use(response => {
     console.log("响应拦截");
     console.log(response);
 
-    if (response.data.code === 310) {
+    if (response.data.code != 200) {
         ElMessage.error(response.data.msg)
-        router.push('/login')
+        switch (response.data.code) {
+            case 401:
+                router.push('/login')
+                break
+            // 其他错误，直接抛出错误提示
+            default:
+        }
     }
     return Promise.resolve(response);
 }, error => {
     console.log(error)
-    if(error.code == 'ERR_NETWORK'){
+    if (error.code == 'ERR_NETWORK') {
         ElMessage.error(error.message)
         return Promise.reject(error);
     }

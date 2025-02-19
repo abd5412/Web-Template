@@ -1,6 +1,6 @@
 package com.abd.server.controller;
 
-import com.abd.server.pojo.ResponseResult;
+import com.abd.server.pojo.R;
 import com.abd.server.pojo.User;
 import com.abd.server.pojo.vo.UserVo;
 import com.abd.server.services.UserService;
@@ -17,32 +17,39 @@ public class UserController {
     UserService userService;
 
     @PostMapping("/login")
-    public ResponseResult login(@RequestBody User user) {
+    public R login(@RequestBody User user) {
         return userService.login(user);
     }
 
     @GetMapping("/test")
-    public ResponseResult test() {
-        return new ResponseResult(200,"鉴权成功",null);
+    public R test() {
+        return R.success("鉴权成功");
     }
 
     @GetMapping("/getUserInfo")
-    public ResponseResult getUserInfo() {
+    public R getUserInfo() {
         return userService.getUserInfo();
     }
 
     @GetMapping("/logout")
-    public ResponseResult logout() {
+    public R logout() {
         return userService.logout();
     }
 
     @PostMapping("/resetPassword")
-    public ResponseResult resetPassword(@RequestBody UserVo vo) {
+    public R resetPassword(@RequestBody UserVo vo) {
         return userService.resetPassword(vo);
     }
 
     @GetMapping("/userPage")
-    public ResponseResult getUserList(Page page,UserVo param) {
+    public R getUserList(Page page, UserVo param) {
         return userService.getUserList(page,param);
     }
+
+    @PostMapping("/editUser")
+    public R editUser(@RequestBody UserVo param) {
+        return userService.editUser(param);
+    }
+
+
 }

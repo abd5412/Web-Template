@@ -37,3 +37,8 @@ export const logoutApi = (param) => get('/user/logout', param);
  * @returns {Promise} - 返回Promise对象
  */
 export const resetPwdApi = (param) => post('/user/resetPassword', param);
+
+/**
+ * 获取用户列表API
+ */
+export const userPage = (param) => get('/user/userPage', param);

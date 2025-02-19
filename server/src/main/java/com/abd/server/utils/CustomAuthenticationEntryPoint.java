@@ -1,6 +1,7 @@
 package com.abd.server.utils;
 
-import com.abd.server.pojo.ResponseResult;
+import com.abd.server.pojo.R;
+import com.abd.server.pojo.sysEnum.HttpStatus;
 import com.alibaba.fastjson.JSON;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -21,9 +22,9 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
         response.setStatus(200);
         response.setContentType("application/json");
         response.setCharacterEncoding("utf-8");
-        ResponseResult responseResult = new ResponseResult();
-        responseResult.setCode(310);
-        responseResult.setMsg(msg);
-        response.getWriter().write(JSON.toJSONString(responseResult));
+//        R responseResult = new R();
+//        responseResult.setCode(310);
+//        responseResult.setMsg(msg);
+        response.getWriter().write(JSON.toJSONString(R.failed(HttpStatus.UNAUTHORIZED)));
     }
 }

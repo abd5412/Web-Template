@@ -1,20 +1,22 @@
 package com.abd.server.services;
 
-import com.abd.server.pojo.ResponseResult;
+import com.abd.server.pojo.R;
 import com.abd.server.pojo.User;
 import com.abd.server.pojo.vo.UserVo;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 public interface UserService {
 
-    ResponseResult login(User user);
+    R login(User user);
 
-    ResponseResult logout();
+    R logout();
 
-    ResponseResult getUserInfo();
+    R getUserInfo();
 
-    ResponseResult resetPassword(UserVo user);
+    R resetPassword(UserVo user);
 
-    Page getUserList(Page<User> page, UserVo user);
+    R getUserList(Page<User> page, UserVo user);
+
+    R editUser(UserVo vo);
 
 }

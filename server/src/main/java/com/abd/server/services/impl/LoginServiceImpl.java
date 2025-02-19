@@ -3,17 +3,18 @@ package com.abd.server.services.impl;
 import com.abd.server.exception.CustomException;
 import com.abd.server.mapper.UserMapper;
 import com.abd.server.pojo.LoginUser;
-import com.abd.server.pojo.ResponseResult;
+import com.abd.server.pojo.R;
 import com.abd.server.pojo.User;
+import com.abd.server.pojo.sysEnum.HttpStatus;
 import com.abd.server.pojo.vo.UserVo;
 import com.abd.server.services.UserService;
 import com.abd.server.utils.JwtUtil;
 import com.abd.server.utils.RedisCache;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -41,7 +42,7 @@ public class LoginServiceImpl implements UserService {
     private UserMapper userMapper;
 
     @Override
-    public ResponseResult login(User user) {
+    public R login(User user) {
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword());
         try {
             Authentication authenticate = authenticationManager.authenticate(authenticationToken);
@@ -54,7 +55,7 @@ public class LoginServiceImpl implements UserService {
             map.put("token", jwt);
             // 把完整的用户信息存入redis，userid作为key
             redisCache.saveObject("login:" + userid, loginUser);
-            return new ResponseResult(200, "登录成功", map);
+            return R.success("登录成功", map);
         } catch (AuthenticationException e) {
             // 如果认证没通过，给出对应的提示
             throw new RuntimeException("登录失败", e);
@@ -63,28 +64,28 @@ public class LoginServiceImpl implements UserService {
 
     // 这里并不需要删除SecurityContextHolder中的信息，只需要删除redis中所存储的即可，因为在进行认证的时候，需要先在SecurityContextHolder中拿到信息后，再从redis中获取对应信息。
     @Override
-    public ResponseResult logout() {
+    public R logout() {
         //获取SecurityContextHolder中的用户id
         UsernamePasswordAuthenticationToken authentication = (UsernamePasswordAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
         LoginUser loginUser = (LoginUser) authentication.getPrincipal();
         String userid = loginUser.getUser().getUsername();
         //删除redis中的值
         redisCache.remove("login:" + userid);
-        return new ResponseResult(200, "注销成功", null);
+        return R.success("注销成功");
     }
 
     @Override
-    public ResponseResult getUserInfo() {
+    public R getUserInfo() {
         UsernamePasswordAuthenticationToken authentication = (UsernamePasswordAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
         LoginUser loginUser = (LoginUser) authentication.getPrincipal();
         String userid = loginUser.getUser().getUsername();
         LoginUser userInfo = redisCache.getObject("login:" + userid);
         userInfo.getUser().setPassword("***");
-        return new ResponseResult(200, "获取成功", userInfo);
+        return R.success( "获取成功", userInfo);
     }
 
     @Override
-    public ResponseResult resetPassword(UserVo user) {
+    public R resetPassword(UserVo user) {
         UsernamePasswordAuthenticationToken authentication = (UsernamePasswordAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
         LoginUser loginUser = (LoginUser) authentication.getPrincipal();
         String userid = loginUser.getUser().getUsername();
@@ -95,19 +96,25 @@ public class LoginServiceImpl implements UserService {
         userMapper.update(null, Wrappers.lambdaUpdate(User.class)
                 .eq(User::getUsername, userid)
                 .set(User::getPassword, bCryptPasswordEncoder.encode(user.getNewPwd())));
-        return new ResponseResult(200, "修改成功", null);
+        return R.success("修改成功");
     }
 
     @Override
-    public Page<User> getUserList(Page<User> page, UserVo user) {
-        LambdaQueryWrapper<User> query = new LambdaQueryWrapper<>();
-        if (Objects.nonNull(user)) {
-            if (Objects.nonNull(user.getUsername())) {
-                query.like(User::getUsername, user.getUsername());
-            }
+    public R getUserList(Page<User> page, UserVo vo) {
+//        LambdaQueryWrapper<User> query = new LambdaQueryWrapper<>();
+//        if (Objects.nonNull(user)) {
+//            if (StringUtils.isNotBlank(user.getUsername())) {
+//                query.like(User::getUsername, user.getUsername());
+//            }
+//
+//        }
+        Page<User> userPage = userMapper.selectUsersByPage(page, vo);
+        return R.success(userPage);
+    }
 
-        }
-        return userMapper.selectPage(page, query);
+    @Override
+    public R editUser(UserVo vo) {
+        return null;
     }
 
     public static void main(String[] args) {

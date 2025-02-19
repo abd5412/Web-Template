@@ -6,6 +6,7 @@ import com.abd.server.utils.CustomAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -50,7 +51,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 // 对于登录接口 允许匿名访问
                 .antMatchers("/user/login").anonymous()
+                // 其他需要特定权限的接口，会自动加上ROLE_前缀
+                .antMatchers("/user/**").hasRole("ADMIN")
+//                .antMatchers("/user/**").hasAnyRole("USER", "ADMIN")
 //                .antMatchers("/testCors").hasAuthority("system:dept:list222")
+
                 // 除上面外的所有请求全部需要鉴权认证
                 .anyRequest().authenticated();
 
@@ -62,6 +67,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 //配置认证失败处理器
                 .authenticationEntryPoint(customAuthenticationEntryPoint)
                 .accessDeniedHandler(customAccessDeniedHandler);
+
 
         //允许跨域
         http.cors();

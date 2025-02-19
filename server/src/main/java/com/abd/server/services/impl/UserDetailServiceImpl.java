@@ -24,12 +24,12 @@ public class UserDetailServiceImpl implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         log.info("用户登录：{}", username);
-        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(User::getUsername, username);
-        User user = userMapper.selectOne(queryWrapper);
+//        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+//        queryWrapper.eq(User::getUsername, username);
+        User user = userMapper.selectUserByUsername(username);
         // 如果没有查询到用户就抛出异常
         if (Objects.isNull(user)) {
-            throw new CustomException("用户不存在");
+            throw new CustomException("用户不存在：" + username);
         }
         //TODO 查询对应的权限信息
         return new LoginUser(user);
