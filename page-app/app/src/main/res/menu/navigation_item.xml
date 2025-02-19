@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/menu_message"
+        android:icon="@drawable/message"
+        android:title="消息" />
+
+    <item
+        android:id="@+id/menu_address_book"
+        android:icon="@drawable/mulu"
+        android:title="通讯录" />
+
+    <item
+        android:id="@+id/menu_discovery"
+        android:icon="@drawable/fenxiang"
+        android:title="发现" />
+
+    <item
+        android:id="@+id/menu_me"
+        android:icon="@drawable/me"
+        android:title="我" />
+</menu>
