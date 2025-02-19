@@ -47,25 +47,25 @@
         <el-dialog v-model="dialogVisible" :title="formTitle" width="500px">
             <el-form ref="userForm" :model="formData" :rules="formRules" label-width="80px">
                 <el-form-item label="用户名" prop="username">
-                    <el-input v-model="formData.username" />
+                    <el-input v-model="formData.username" :disabled="!isAdd" />
                 </el-form-item>
 
                 <el-form-item label="邮箱" prop="email">
                     <el-input v-model="formData.email" />
                 </el-form-item>
 
+                <el-form-item label="手机号" prop="tel">
+                    <el-input v-model="formData.tel" />
+                </el-form-item>
+
                 <el-form-item label="角色" prop="role">
-                    <!-- <el-select v-model="formData.role" placeholder="请选择角色">
-                        <el-option v-for="role in roleOptions" :key="role.value" :label="role.label"
-                            :value="role.value" />
-                    </el-select> -->
-                    <el-select v-model="formData.authorities" multiple placeholder="Select" style="width: 240px">
+                    <el-select v-model="formData.authorities" multiple placeholder="请选择角色" style="width: 240px">
                         <el-option v-for="(item, index) in roleOptions" :key="item.authorityName" :label="item.label"
                             :value="item.authorityName" />
                     </el-select>
                 </el-form-item>
 
-                <el-form-item label="密码" prop="password" v-if="isAdd">
+                <el-form-item label="密码" prop="password" >
                     <el-input v-model="formData.password" type="password" />
                 </el-form-item>
             </el-form>
@@ -240,8 +240,9 @@ const resetForm = () => {
     formData.id = null
     formData.username = ''
     formData.email = ''
-    formData.role = ''
+    formData.authorities = []
     formData.password = ''
+    formData.tel = ''
 }
 
 const handleSearch = () => {

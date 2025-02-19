@@ -2,6 +2,7 @@ package com.abd.server.services.impl;
 
 import com.abd.server.exception.CustomException;
 import com.abd.server.mapper.UserMapper;
+import com.abd.server.pojo.Authority;
 import com.abd.server.pojo.LoginUser;
 import com.abd.server.pojo.R;
 import com.abd.server.pojo.User;
@@ -10,7 +11,9 @@ import com.abd.server.pojo.vo.UserVo;
 import com.abd.server.services.UserService;
 import com.abd.server.utils.JwtUtil;
 import com.abd.server.utils.RedisCache;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -22,6 +25,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.util.HashMap;
@@ -81,7 +85,7 @@ public class LoginServiceImpl implements UserService {
         String userid = loginUser.getUser().getUsername();
         LoginUser userInfo = redisCache.getObject("login:" + userid);
         userInfo.getUser().setPassword("***");
-        return R.success( "获取成功", userInfo);
+        return R.success("获取成功", userInfo);
     }
 
     @Override
@@ -101,20 +105,45 @@ public class LoginServiceImpl implements UserService {
 
     @Override
     public R getUserList(Page<User> page, UserVo vo) {
-//        LambdaQueryWrapper<User> query = new LambdaQueryWrapper<>();
-//        if (Objects.nonNull(user)) {
-//            if (StringUtils.isNotBlank(user.getUsername())) {
-//                query.like(User::getUsername, user.getUsername());
-//            }
-//
-//        }
         Page<User> userPage = userMapper.selectUsersByPage(page, vo);
         return R.success(userPage);
     }
 
+    @Transactional
     @Override
     public R editUser(UserVo vo) {
-        return null;
+        if (vo.getId() == null){
+            return R.failed(HttpStatus.BAD_REQUEST, "id不能为空");
+        }
+        LambdaUpdateWrapper<User> update = new LambdaUpdateWrapper<>();
+        update.eq(User::getId, vo.getId());
+
+        if (StringUtils.isBlank(vo.getEmail())) {
+            return R.failed(HttpStatus.BAD_REQUEST, "邮箱不能为空");
+        }else {
+            LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(User::getEmail, vo.getEmail());
+            if (userMapper.selectOne(queryWrapper) != null) {
+                return R.failed(HttpStatus.BAD_REQUEST, "邮箱已存在");
+            }
+        }
+        update.eq(User::getEmail, vo.getEmail());
+        if (StringUtils.isBlank(vo.getTel())) {
+            return R.failed(HttpStatus.BAD_REQUEST, "手机号不能为空");
+        } else {
+            LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(User::getTel, vo.getTel());
+            if (userMapper.selectOne(queryWrapper) != null) {
+                return R.failed(HttpStatus.BAD_REQUEST, "手机号已存在");
+            }
+        }
+        update.eq(User::getTel, vo.getTel());
+        for (String authorityName : vo.getAuthorities()){
+            Authority authority = userMapper.selectAuthoritiesByUserName(authorityName);
+            userMapper.deleteUserAuthority(vo.getId());
+            userMapper.insertUserAuthority(vo.getId(), authority.getId());
+        }
+        return R.success("修改成功");
     }
 
     public static void main(String[] args) {

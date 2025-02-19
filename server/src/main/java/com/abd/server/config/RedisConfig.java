@@ -1,32 +1,51 @@
 package com.abd.server.config;
 
+import com.alibaba.fastjson.support.spring.GenericFastJsonRedisSerializer;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.GenericToStringSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
 public class RedisConfig {
 
     @Bean
-    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
-        RedisTemplate<String, Object> template = new RedisTemplate<>();
-        template.setConnectionFactory(redisConnectionFactory);
+    public RedisTemplate<String,Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
 
-        // 使用 StringRedisSerializer 来序列化和反序列化 redis 的 key 值
-        StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
-        template.setKeySerializer(stringRedisSerializer);
-        template.setHashKeySerializer(stringRedisSerializer);
+        RedisTemplate<String,Object> redisTemplate = new RedisTemplate();
 
-        // 使用 GenericJackson2JsonRedisSerializer 来序列化和反序列化 redis 的 value 值
-        GenericJackson2JsonRedisSerializer jackson2JsonRedisSerializer = new GenericJackson2JsonRedisSerializer();
-        template.setValueSerializer(jackson2JsonRedisSerializer);
-        template.setHashValueSerializer(jackson2JsonRedisSerializer);
+        redisTemplate.setConnectionFactory(redisConnectionFactory);
 
-        template.afterPropertiesSet();
-        return template;
+        // 使用 GenericFastJsonRedisSerializer 替换默认序列化
+
+        GenericFastJsonRedisSerializer genericFastJsonRedisSerializer = new GenericFastJsonRedisSerializer();
+
+        // 设置key和value的序列化规则
+
+        redisTemplate.setKeySerializer(new GenericToStringSerializer(Object.class));
+
+        redisTemplate.setValueSerializer(genericFastJsonRedisSerializer);
+
+        // 设置hashKey和hashValue的序列化规则
+
+        redisTemplate.setHashKeySerializer(new GenericToStringSerializer(Object.class));
+
+        redisTemplate.setHashValueSerializer(genericFastJsonRedisSerializer);
+
+        // 设置支持事物
+
+        redisTemplate.setEnableTransactionSupport(true);
+
+        redisTemplate.afterPropertiesSet();
+
+        return redisTemplate;
+
     }
 
 }

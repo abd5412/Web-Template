@@ -42,3 +42,8 @@ export const resetPwdApi = (param) => post('/user/resetPassword', param);
  * 获取用户列表API
  */
 export const userPage = (param) => get('/user/userPage', param);
+
+/**
+ * 修改用户信息
+ */
+export const updateUser = (param) => post('/user/updateUser', param);
