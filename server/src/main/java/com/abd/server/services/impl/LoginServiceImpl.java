@@ -7,9 +7,11 @@ import com.abd.server.pojo.LoginUser;
 import com.abd.server.pojo.R;
 import com.abd.server.pojo.User;
 import com.abd.server.pojo.sysEnum.HttpStatus;
+import com.abd.server.pojo.sysEnum.RedisEnum;
 import com.abd.server.pojo.vo.UserVo;
 import com.abd.server.services.UserService;
 import com.abd.server.utils.JwtUtil;
+import com.abd.server.utils.LongIdGenerator;
 import com.abd.server.utils.RedisCache;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -28,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -44,6 +47,8 @@ public class LoginServiceImpl implements UserService {
     private RedisCache redisCache;
     @Resource
     private UserMapper userMapper;
+    @Resource
+    private LongIdGenerator longIdGenerator;
 
     @Override
     public R login(User user) {
@@ -58,7 +63,7 @@ public class LoginServiceImpl implements UserService {
             Map<String, String> map = new HashMap<>();
             map.put("token", jwt);
             // 把完整的用户信息存入redis，userid作为key
-            redisCache.saveObject("login:" + userid, loginUser);
+            redisCache.saveObject(RedisEnum.LOGIN + userid, loginUser);
             return R.success("登录成功", map);
         } catch (AuthenticationException e) {
             // 如果认证没通过，给出对应的提示
@@ -74,7 +79,7 @@ public class LoginServiceImpl implements UserService {
         LoginUser loginUser = (LoginUser) authentication.getPrincipal();
         String userid = loginUser.getUser().getUsername();
         //删除redis中的值
-        redisCache.remove("login:" + userid);
+        redisCache.remove(RedisEnum.LOGIN + userid);
         return R.success("注销成功");
     }
 
@@ -83,7 +88,7 @@ public class LoginServiceImpl implements UserService {
         UsernamePasswordAuthenticationToken authentication = (UsernamePasswordAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
         LoginUser loginUser = (LoginUser) authentication.getPrincipal();
         String userid = loginUser.getUser().getUsername();
-        LoginUser userInfo = redisCache.getObject("login:" + userid);
+        LoginUser userInfo = redisCache.getObject(RedisEnum.LOGIN + userid);
         userInfo.getUser().setPassword("***");
         return R.success("获取成功", userInfo);
     }
@@ -106,28 +111,70 @@ public class LoginServiceImpl implements UserService {
     @Override
     public R getUserList(Page<User> page, UserVo vo) {
         Page<User> userPage = userMapper.selectUsersByPage(page, vo);
+        for (User user : userPage.getRecords()){
+            user.setOnline(redisCache.hasKey(RedisEnum.LOGIN + user.getUsername()));
+        }
         return R.success(userPage);
     }
 
     @Transactional
     @Override
     public R editUser(UserVo vo) {
-        if (vo.getId() == null){
-            return R.failed(HttpStatus.BAD_REQUEST, "id不能为空");
+        if (vo.getUsername() == null) {
+            return R.failed(HttpStatus.BAD_REQUEST, "用户名不能为空");
         }
         LambdaUpdateWrapper<User> update = new LambdaUpdateWrapper<>();
-        update.eq(User::getId, vo.getId());
-
+        update.eq(User::getUsername, vo.getUsername());
+        User user = userMapper.selectOne(update);
+        if (user == null){
+            return R.failed(HttpStatus.BAD_REQUEST, "用户不存在");
+        }
         if (StringUtils.isBlank(vo.getEmail())) {
             return R.failed(HttpStatus.BAD_REQUEST, "邮箱不能为空");
-        }else {
+        }
+        update.set(User::getEmail, vo.getEmail());
+        if (StringUtils.isBlank(vo.getTel())) {
+            return R.failed(HttpStatus.BAD_REQUEST, "手机号不能为空");
+        } else {
             LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(User::getEmail, vo.getEmail());
+            queryWrapper.eq(User::getTel, vo.getTel()).ne(User::getUsername, vo.getUsername());
             if (userMapper.selectOne(queryWrapper) != null) {
-                return R.failed(HttpStatus.BAD_REQUEST, "邮箱已存在");
+                return R.failed(HttpStatus.BAD_REQUEST, "手机号已存在");
             }
         }
-        update.eq(User::getEmail, vo.getEmail());
+        update.set(User::getTel, vo.getTel());
+        if (vo.getAuthorities().isEmpty()) {
+            return R.failed(HttpStatus.BAD_REQUEST, "权限不能为空");
+        }
+        userMapper.deleteUserAuthority(user.getId());
+        for (String authorityName : vo.getAuthorities()) {
+            Authority authority = userMapper.selectAuthoritiesByUserName(authorityName);
+            userMapper.insertUserAuthority(user.getId(), authority.getId());
+        }
+//        if (StringUtils.isNotBlank(vo.getNewPwd())){
+//            UserVo userVo = new UserVo();
+//            userVo.setId(user.getId());
+//            userVo.setNewPwd(vo.getNewPwd());
+//            resetPassword(userVo);
+//        }
+        userMapper.update(null, update);
+        return R.success("修改成功");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public R addUser(UserVo vo) {
+        User insert = new User();
+        if (StringUtils.isBlank(vo.getUsername())) {
+            return R.failed(HttpStatus.BAD_REQUEST, "用户名不能为空");
+        }else if (userMapper.selectOne(Wrappers.lambdaQuery(User.class).eq(User::getUsername, vo.getUsername())) != null) {
+            return R.failed(HttpStatus.BAD_REQUEST, "用户名已存在");
+        }
+        insert.setUsername(vo.getUsername());
+        if (StringUtils.isBlank(vo.getEmail())) {
+            return R.failed(HttpStatus.BAD_REQUEST, "邮箱不能为空");
+        }
+        insert.setEmail(vo.getEmail());
         if (StringUtils.isBlank(vo.getTel())) {
             return R.failed(HttpStatus.BAD_REQUEST, "手机号不能为空");
         } else {
@@ -137,18 +184,49 @@ public class LoginServiceImpl implements UserService {
                 return R.failed(HttpStatus.BAD_REQUEST, "手机号已存在");
             }
         }
-        update.eq(User::getTel, vo.getTel());
-        for (String authorityName : vo.getAuthorities()){
-            Authority authority = userMapper.selectAuthoritiesByUserName(authorityName);
-            userMapper.deleteUserAuthority(vo.getId());
-            userMapper.insertUserAuthority(vo.getId(), authority.getId());
+        insert.setTel(vo.getTel());
+        if (StringUtils.isBlank(vo.getNewPwd())){
+            return R.failed(HttpStatus.BAD_REQUEST, "密码不能为空");
         }
-        return R.success("修改成功");
+        insert.setPassword(new BCryptPasswordEncoder().encode(vo.getNewPwd()));
+        long id = longIdGenerator.generateId();
+        insert.setId(id);
+        insert.setCdTime(LocalDateTime.now());
+        userMapper.insert(insert);
+        if (vo.getAuthorities().isEmpty()) {
+            return R.failed(HttpStatus.BAD_REQUEST, "权限不能为空");
+        }
+        userMapper.deleteUserAuthority(id);
+        for (String authorityName : vo.getAuthorities()) {
+            Authority authority = userMapper.selectAuthoritiesByUserName(authorityName);
+            userMapper.insertUserAuthority(id, authority.getId());
+        }
+        return R.success("新增成功");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public R delUser(UserVo vo) {
+        String username = vo.getUsername();
+        User user = userMapper.selectOne(Wrappers.lambdaUpdate(User.class).eq(User::getUsername, username));
+        userMapper.deleteUserAuthority(user.getId());
+        userMapper.deleteById(user.getId());
+        return R.success();
+    }
+
+    @Override
+    public R offlineUser(UserVo vo) {
+        if (redisCache.hasKey(RedisEnum.LOGIN + vo.getUsername())) {
+            log.info("用户下线：{}", vo.getUsername());
+            redisCache.remove(RedisEnum.LOGIN + vo.getUsername());
+            return R.success("下线成功");
+        }
+        return R.failed();
     }
 
     public static void main(String[] args) {
-        BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
-        System.out.println(bCryptPasswordEncoder.encode("123456"));
-        System.out.println(bCryptPasswordEncoder.upgradeEncoding("$2a$10$ORiqoqBARNMB/kS0Rj5Hg.LDW16lZvBTx0Tmrju1FPrSDo8sJb3d."));
+//        BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
+//        System.out.println(bCryptPasswordEncoder.encode("123456"));
+//        System.out.println(bCryptPasswordEncoder.upgradeEncoding("$2a$10$ORiqoqBARNMB/kS0Rj5Hg.LDW16lZvBTx0Tmrju1FPrSDo8sJb3d."));
     }
 }

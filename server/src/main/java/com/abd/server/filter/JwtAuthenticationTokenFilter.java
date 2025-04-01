@@ -3,6 +3,7 @@ package com.abd.server.filter;
 import com.abd.server.exception.CustomException;
 import com.abd.server.exception.TokenException;
 import com.abd.server.pojo.LoginUser;
+import com.abd.server.pojo.sysEnum.RedisEnum;
 import com.abd.server.utils.JwtUtil;
 import com.abd.server.utils.RedisCache;
 import io.jsonwebtoken.Claims;
@@ -48,7 +49,7 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
             throw new TokenException("token非法");
         }
         //从redis中获取用户信息
-        String redisKey = "login:" + userid;
+        String redisKey = RedisEnum.LOGIN + userid;
         LoginUser loginUser = redisCache.getObject(redisKey);
         if(Objects.isNull(loginUser)){
             throw new TokenException("用户未登录");

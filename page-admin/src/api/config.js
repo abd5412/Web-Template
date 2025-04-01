@@ -16,7 +16,6 @@ const milliaAxios = axios.create({
 
 // 拦截器 请求拦截
 milliaAxios.interceptors.request.use(config => {
-    console.log("请求拦截");
     const token = localStorage.getItem('token');
 
     // 判断是否存在token
@@ -33,9 +32,6 @@ milliaAxios.interceptors.request.use(config => {
 
 // 拦截器 响应拦截
 milliaAxios.interceptors.response.use(response => {
-    console.log("响应拦截");
-    console.log(response);
-
     if (response.data.code != 200) {
         ElMessage.error(response.data.msg)
         switch (response.data.code) {
@@ -48,7 +44,6 @@ milliaAxios.interceptors.response.use(response => {
     }
     return Promise.resolve(response);
 }, error => {
-    console.log(error)
     if (error.code == 'ERR_NETWORK') {
         ElMessage.error(error.message)
         return Promise.reject(error);

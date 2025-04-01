@@ -51,5 +51,20 @@ public class UserController {
         return userService.editUser(param);
     }
 
+    @PostMapping("/addUser")
+    public R addUser(@RequestBody UserVo param) {
+        return userService.addUser(param);
+    }
+
+    @PostMapping("/delUser")
+    public R delUser(@RequestBody UserVo param) {
+        return userService.delUser(param);
+    }
+
+    @PostMapping("/offlineUser")
+    public R offlineUser(@RequestBody UserVo param) {
+        return userService.offlineUser(param);
+    }
+
 
 }

@@ -19,4 +19,10 @@ public interface UserService {
 
     R editUser(UserVo vo);
 
+    R addUser(UserVo vo);
+
+    R delUser(UserVo vo);
+
+    R offlineUser(UserVo vo);
+
 }

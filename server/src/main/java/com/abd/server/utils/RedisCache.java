@@ -25,4 +25,9 @@ public class RedisCache {
     public void remove(String key) {
         redisTemplate.delete(key);
     }
+
+    // 查看key是否存在
+    public boolean hasKey(String key) {
+        return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+    }
 }

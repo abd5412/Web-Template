@@ -22,6 +22,7 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class User implements Serializable {
 
+    @TableId
     private Long id;
 
     private String username;
@@ -35,7 +36,11 @@ public class User implements Serializable {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime cdTime;
 
+    @TableField(exist = false)
     private List<Authority> authorities;
+
+    @TableField(exist = false)
+    private boolean online;
 
     public User(LoginUser loginUser) {
         this.username = loginUser.getUsername();

@@ -20,15 +20,15 @@ public enum HttpStatus {
 
     // 客户端错误 4xx
     BAD_REQUEST(400, "Bad Request"),
-    UNAUTHORIZED(401, "Unauthorized"),
-    FORBIDDEN(403, "Forbidden"),
+    UNAUTHORIZED(401, "未登录"),
+    FORBIDDEN(403, "权限不足"),
     NOT_FOUND(404, "Not Found"),
     METHOD_NOT_ALLOWED(405, "Method Not Allowed"),
-    REQUEST_TIMEOUT(408, "Request Timeout"),
+    REQUEST_TIMEOUT(408, "请求超时"),
     CONFLICT(409, "Conflict"),
 
     // 服务端错误 5xx
-    INTERNAL_SERVER_ERROR(500, "Internal Server Error"),
+    INTERNAL_SERVER_ERROR(500, "服务器内部错误"),
     NOT_IMPLEMENTED(501, "Not Implemented"),
     BAD_GATEWAY(502, "Bad Gateway"),
     SERVICE_UNAVAILABLE(503, "Service Unavailable"),

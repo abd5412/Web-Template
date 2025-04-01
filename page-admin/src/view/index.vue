@@ -7,12 +7,12 @@
                 <el-avatar :size="30" src="https://fuss10.elemecdn.com/e/5d/4a731a90594a4af544c0c25941171jpeg.jpeg" />
 
                 <el-dropdown>
-                    <span class="el-dropdown-link">{{ username }}</span>
+                    <span class="el-dropdown-link">{{ userInfo.username }}</span>
                     <template #dropdown>
                         <el-dropdown-menu>
                             <el-dropdown-item @click="logout">退出登录</el-dropdown-item>
                             <el-dropdown-item @click="resetPwd">重置密码</el-dropdown-item>
-                            <el-dropdown-item divided>Action 5</el-dropdown-item>
+                            <!-- <el-dropdown-item divided>Action 5</el-dropdown-item> -->
                         </el-dropdown-menu>
                     </template>
                 </el-dropdown>
@@ -27,7 +27,7 @@
                         <el-icon><icon-menu /></el-icon>
                         <span>仪表盘</span>
                     </el-menu-item>
-                    <el-sub-menu index="2">
+                    <el-sub-menu index="2" v-if="isAdmin">
                         <template #title>
                             <el-icon>
                                 <document />
@@ -85,7 +85,7 @@
     </div>
 </template>
 <script setup>
-import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import Index from './page/index/index.vue'
 import UserManagement from './user/userManagement.vue'
 // import UserPermission from './user/userPermission.vue'
@@ -101,6 +101,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import router from '../router'
 
 const username = ref('')
+let userInfo = ref({})
 const indexShow = ref('1')
 const dialogFormVisible = ref(false)
 
@@ -138,22 +139,25 @@ const handleMenuSelect = (even) => {
     indexShow.value = even
 }
 
+
 onMounted(() => {
-    getUserInfo().then(res => {
-        localStorage.setItem('userInfo', res.data)
-        username.value = res.data.username
-    })
+    fetchUserInfo()
 })
 
 const logout = () => {
-    logoutApi().then(res => {
-        if (res.code == 200) {
-            ElMessage.success("退出登录")
-            router.push("/login")
-            return
-        } else {
-            ElMessage.error(res.message)
-        }
+
+    ElMessageBox.confirm('是否要退出登录?', '注意', {
+        confirmButtonText: '确认',
+        cancelButtonText: '取消',
+        type: 'warning',
+    }).then(() => {
+        logoutApi()
+            .then(res => {
+                if (res.code === 200) {
+                    localStorage.removeItem('token')
+                    router.push('/login')
+                }
+            })
     })
 }
 
@@ -175,43 +179,58 @@ const resetPwdDiaSub = async () => {
     confirmBox()
 }
 
+// 计算属性，用于检查用户是否是管理员
+const isAdmin = computed(() => {
+    return hasAuthority(userInfo.value, 'ROLE_ADMIN');
+});
+// 检查用户是否有特定权限的函数
+const hasAuthority = (user, roleName) => {
+    return user.user?.authorities?.some(authority => authority.authorityName === roleName) ?? false;
+};
+
+// 获取用户信息的函数
+const fetchUserInfo = async () => {
+    try {
+        const res = await getUserInfo(); // 假设这是获取用户信息的 API 端点
+        localStorage.setItem('userInfo', JSON.stringify(res.data)); // 存储为字符串，因为 localStorage 只能存储字符串
+        userInfo.value = res.data; // 更新响应式引用
+    } catch (error) {
+        console.error('Failed to fetch user info:', error);
+        // 可以处理错误，比如显示一个错误消息给用户
+    }
+};
+
 const confirmBox = () => {
-    ElMessageBox.confirm(
-        '是否要重置密码?',
-        '注意',
-        {
-            confirmButtonText: '确认',
-            cancelButtonText: '取消',
-            type: 'warning',
-        }
-    )
-        .then(() => {
-            resetPwdApi(form)
-                .then(res => {
-                    dialogFormVisible.value = false
-                    console.log(res)
-                    if (res.code === 200) {
-                        ElMessage({
-                            type: 'success',
-                            message: '密码重置成功',
-                        })
-                        localStorage.removeItem('token')
-                        router.push('/login')
-                        return
-                    } else {
-                        ElMessage({
-                            type: 'error',
-                            message: res.msg,
-                        })
-                    }
-                })
-        })
-        .catch(() => {
-            // ElMessage({
-            //     type: 'info',
-            //     message: 'Delete canceled',
-            // })
-        })
+    ElMessageBox.confirm('是否要重置密码?', '注意', {
+        confirmButtonText: '确认',
+        cancelButtonText: '取消',
+        type: 'warning',
+    }).then(() => {
+        resetPwdApi(form)
+            .then(res => {
+                dialogFormVisible.value = false
+                console.log(res)
+                if (res.code === 200) {
+                    ElMessage({
+                        type: 'success',
+                        message: '密码重置成功',
+                    })
+                    localStorage.removeItem('token')
+                    router.push('/login')
+                    return
+                } else {
+                    ElMessage({
+                        type: 'error',
+                        message: res.msg,
+                    })
+                }
+            })
+    }).catch(() => {
+        // ElMessage({
+        //     type: 'info',
+        //     message: 'Delete canceled',
+        // })
+    })
 }
 </script>
 

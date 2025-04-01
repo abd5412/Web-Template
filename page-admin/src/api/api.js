@@ -46,4 +46,19 @@ export const userPage = (param) => get('/user/userPage', param);
 /**
  * 修改用户信息
  */
-export const updateUser = (param) => post('/user/updateUser', param);
+export const updateUser = (param) => post('/user/editUser', param);
+
+/**
+ * 新增用户
+ */
+export const addUser = (param) => post('/user/addUser', param);
+
+/**
+ * 删除用户
+ */
+export const delUser = (param) => post('/user/delUser', param);
+
+/**
+ * 用户下线
+ */
+export const offlineUser = (param) => post('/user/offlineUser', param);

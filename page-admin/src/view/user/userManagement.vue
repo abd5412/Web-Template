@@ -17,6 +17,12 @@
             <el-table-column label="ID" width="80" type="index" />
             <el-table-column prop="username" label="用户名" />
             <el-table-column prop="email" label="邮箱" />
+            <el-table-column prop="email" label="状态">
+                <template #default="{ row }">
+                    <el-tag v-if="row.online" type="success">在线</el-tag>
+                    <el-tag v-else type="danger">离线</el-tag>
+                </template>
+            </el-table-column>
             <el-table-column prop="authorities" label="角色">
                 <template #default="{ row }">
                     <el-tag style="margin-right: 5px;" v-for="(authority, index) in row.authorities" :key="index"
@@ -29,8 +35,8 @@
             <el-table-column label="操作" width="200">
                 <template #default="{ row }">
                     <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-                    <el-button size="small" @click="handleEdit(row)">下线</el-button>
-                    <el-button size="small" type="danger" @click="handleDelete(row.id)">
+                    <el-button size="small" @click="offlineHandle(row.username)">下线</el-button>
+                    <el-button size="small" type="danger" @click="handleDelete(row.username)">
                         删除
                     </el-button>
                 </template>
@@ -65,8 +71,8 @@
                     </el-select>
                 </el-form-item>
 
-                <el-form-item label="密码" prop="password" >
-                    <el-input v-model="formData.password" type="password" />
+                <el-form-item label="密码" prop="password">
+                    <el-input v-model="formData.password" type="password" :disabled="!isAdd" />
                 </el-form-item>
             </el-form>
 
@@ -84,7 +90,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { Search, Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { userPage } from '../../api/api'
+import { userPage, updateUser, addUser, delUser, offlineUser } from '../../api/api'
 
 // 模拟数据
 // const mockUsers = Array.from({ length: 10 }, (_, i) => ({
@@ -124,14 +130,14 @@ const roleOptions = reactive([
         authorityName: 'ROLE_ADMIN',
         label: '管理员',
     },
-    {
-        authorityName: 'system:dept:list',
-        label: '其他',
-    },
+    // {
+    //     authorityName: 'system:dept:list',
+    //     label: '其他',
+    // },
 ])
 
 const validateRole = (rule, value, callback) => {
-    if (value && value.length > 0) {
+    if (formData && formData.authorities.length > 0) {
         callback();
     } else {
         callback(new Error('请选择角色'));
@@ -139,7 +145,7 @@ const validateRole = (rule, value, callback) => {
 };
 
 // 表单验证规则
-const rules = ref({
+const formRules = ref({
     username: [
         { required: true, message: '请输入用户名', trigger: 'blur' }
     ],
@@ -200,37 +206,64 @@ const handleEdit = (row) => {
     dialogVisible.value = true
 }
 
-const handleDelete = (id) => {
+const offlineHandle = (username) => {
+    ElMessageBox.confirm('确认下线该用户？', '警告', {
+        confirmButtonText: '确认',
+        cancelButtonText: '取消',
+        type: 'warning'
+    }).then(() => {
+        offlineUser({ username }).then(res => {
+            if (res.code == 200) {
+                ElMessage.success('下线成功')
+                handleSearch()
+            }
+        })
+    })
+}
+
+const handleDelete = (username) => {
     ElMessageBox.confirm('确认删除该用户？', '警告', {
         confirmButtonText: '确认',
         cancelButtonText: '取消',
         type: 'warning'
     }).then(() => {
-        // const index = mockUsers.findIndex(user => user.id === id)
-        // mockUsers.splice(index, 1)
-        // total.value--
-        ElMessage.success('删除成功')
+        delUser({ username }).then(res => {
+            if (res.code == 200) {
+                ElMessage.success('删除成功')
+                handleSearch()
+            }
+        })
     })
 }
 
 const submitForm = async () => {
     try {
         await userForm.value.validate()
-
+        console.log(formData)
+        console.log(userForm)
         if (isAdd.value) {
-            // mockUsers.unshift({
-            //     ...formData,
-            //     id: mockUsers.length + 1,
-            //     createTime: new Date().toLocaleString()
-            // })
-            // total.value++
+            formData.newPwd = formData.password
+            addUser(formData).then(res => {
+                if (res.code == 200) {
+                    ElMessage.success('新增成功')
+                    handleSearch()
+                    dialogVisible.value = false
+                }
+            })
         } else {
-            // const index = mockUsers.findIndex(user => user.id === formData.id)
-            // mockUsers.splice(index, 1, formData)
+            await updateUser(formData).then(res => {
+                if (res.code == 200) {
+                    ElMessage.success('修改成功')
+                    handleSearch()
+                    dialogVisible.value = false
+                }
+
+            }).catch(err => {
+                console.log(err)
+                loading.value = false
+            })
         }
 
-        dialogVisible.value = false
-        ElMessage.success('操作成功')
     } catch (error) {
         console.log('表单验证失败:', error)
     }

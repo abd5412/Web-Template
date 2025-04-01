@@ -23,6 +23,8 @@ public class UserVo {
 
     private String tel;
 
+    private Long uid;
+
     private List<String> authorities;
 
 }
